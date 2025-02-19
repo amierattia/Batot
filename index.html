@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ar" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بطوط </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Add Creative Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Add FontAwesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Apply Creative Fonts */
+        body {
+            font-family: 'Cairo', 'Poppins', sans-serif;
+            direction: rtl;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 12px 20px;
+            border-radius: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .message:hover {
+            transform: scale(1.02);
+        }
+
+        .user-message {
+            background: linear-gradient(to right, #6D28D9, #8B5CF6);
+            align-self: flex-end;
+            color: #FFF;
+        }
+
+        .bot-message {
+            background: linear-gradient(to right, #FFD700, #FFA500); /* بطوط's playful yellow/orange */
+            align-self: flex-start;
+            color: #FFF;
+        }
+
+        .loading {
+            text-align: center;
+            margin-top: 20px;
+            font-style: italic;
+            color: #888;
+        }
+
+        /* Custom Scrollbar */
+        #chat-box::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #chat-box::-webkit-scrollbar-track {
+            background: #F4F4F4;
+            border-radius: 10px;
+        }
+
+        #chat-box::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+
+        #chat-box::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Button Hover Effects */
+        #sendBtn:hover {
+            background: linear-gradient(to right, #FF6347, #FF4500); /* بطوط's playful red/orange */
+            transform: scale(1.05);
+        }
+
+        #sendBtn:active {
+            transform: scale(0.95);
+        }
+
+        /* بطوط's Chat Container */
+        .chat-container {
+            background: #FFF;
+            border: 2px solid #FFD700; /* بطوط's playful yellow border */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* بطوط's Input Container */
+        .input-container {
+            background: #FFF;
+            border-top: 2px solid #FFD700; /* بطوط's playful yellow border */
+        }
+
+        /* بطوط's Icon Styles */
+        .batoot-icon {
+            width: 50px;
+            height: 50px;
+            background: #FFD700;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .batoot-icon i {
+            color: #FFF;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col justify-center items-center bg-gray-50">
+    <!-- بطوط's Header -->
+   
+
+    <!-- Chat Container -->
+    <div class="w-full max-w-3xl h-[90vh] chat-container rounded-lg shadow-lg flex flex-col overflow-hidden mt-16">
+        <!-- Chat Box -->
+        <div id="chat-box" class="flex-1 p-6 overflow-y-auto flex flex-col space-y-4">
+            <!-- Example Messages -->
+            <div class="message user-message bg-gradient-to-r from-blue-500 to-purple-600 text-white self-end p-4 rounded-xl max-w-[70%]">
+                مرحبا، كيف يمكنني تأمين شبكتي؟
+            </div>
+            <div class="message bot-message bg-gradient-to-r from-yellow-400 to-orange-500 text-white self-start p-4 rounded-xl max-w-[70%]">
+                مرحبا! لتأمين شبكتك، يمكنك اتباع الخطوات التالية: 1) استخدام جدار حماية قوي. 2) تحديث البرامج بانتظام. 3) استخدام كلمات مرور قوية.
+            </div>
+        </div>
+
+        <!-- Input Container -->
+        <div class="p-4 input-container">
+            <div class="flex items-center space-x-2">
+                <input type="text" id="query" placeholder="اكتب سؤالك هنا..." class="flex-1 p-3 rounded-full bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition">
+                <button id="sendBtn" class="p-3 bg-yellow-500 text-white rounded-full hover:bg-yellow-600 transition">
+                    <i class="fas fa-paper-plane"></i> <!-- Send Icon -->
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chat Functionality
+        const chatBox = document.getElementById("chat-box");
+        const queryInput = document.getElementById("query");
+        const sendBtn = document.getElementById("sendBtn");
+
+        let messages = JSON.parse(localStorage.getItem("chatMessages")) || [];
+        messages.forEach(message => {
+            appendMessage(message.text, message.sender);
+        });
+
+        async function searchGemini() {
+            let userQuestion = queryInput.value;
+            if (!userQuestion.trim()) return;
+
+            appendMessage(userQuestion, "user");
+            queryInput.value = "";
+
+            const loadingDiv = document.createElement("div");
+            loadingDiv.classList.add("loading", "text-center", "mt-4", "italic", "text-gray-500");
+            loadingDiv.textContent = "جارِ البحث...";
+            chatBox.appendChild(loadingDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const prompt = `
+               You are an experienced Egyptian cybersecurity expert specializing in network security. Your expertise includes penetration testing, protection against cyberattacks, traffic analysis, and security protocols. Additionally, you possess advanced knowledge of network certifications such as CCNA, CCNP, CCIE, Network+, A+, and have extensive experience managing both Linux and Windows systems. Please provide your response in formal Egyptian Arabic dialect, focusing strictly on the topic asked, explaining it in detail from the beginning, and organizing the information in a clear, step-by-step manner.
+                السؤال: ${userQuestion}
+            `;
+
+            try {
+                let response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyCAAX9Aoo6ZLry0qzn7Lt-N1GVxYjrgz2g", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: prompt }]
+                        }]
+                    })
+                });
+
+                let data = await response.json();
+                let answer = data?.candidates?.[0]?.content?.parts?.[0]?.text || "معلش ي قلب بطوط بس انا مرهق دلواقتي مش قادر ادورلك علي طلبك حاول بعدين 🥺👈👉.";
+                chatBox.removeChild(loadingDiv);
+                appendMessage(answer, "bot");
+            } catch (error) {
+                console.error("❌ خطأ في الاتصال بـ API:", error);
+                chatBox.removeChild(loadingDiv);
+                appendMessage("معلش ي قلب بطوط بس انا مرهق دلواقتي مش قادر ادورلك علي طلبك حاول بعدين 🥺👈👉.", "bot");
+            }
+        }
+
+        function appendMessage(text, sender) {
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message", `${sender}-message`, "p-4", "rounded-xl", "max-w-[70%]", "shadow-md");
+            messageDiv.innerHTML = text.replace(/\n/g, "<br>");
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            messages.push({ text: text, sender: sender });
+            localStorage.setItem("chatMessages", JSON.stringify(messages));
+        }
+
+        sendBtn.addEventListener("click", searchGemini);
+        queryInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                searchGemini();
+            }
+        });
+    </script>
+</body>
+</html>
